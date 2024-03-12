@@ -111,6 +111,7 @@ class OpenAIEmbeddingFunction(EmbeddingFunction[Documents]):
         api_version: Optional[str] = None,
         deployment_id: Optional[str] = None,
         default_headers: Optional[Mapping[str, str]] = None,
+        dimensions: Optional[int] = None,
     ):
         """
         Initialize the OpenAIEmbeddingFunction.
@@ -131,6 +132,7 @@ class OpenAIEmbeddingFunction(EmbeddingFunction[Documents]):
                 point to a different deployment, such as an Azure deployment.
             deployment_id (str, optional): Deployment ID for Azure OpenAI.
             default_headers (Mapping, optional): A mapping of default headers to be sent with each API request.
+            dimensions (int, optional): The number of dimensions the output embeddings should have. Only supported in text-embedding-3 and later models.
 
         """
         try:
@@ -178,6 +180,7 @@ class OpenAIEmbeddingFunction(EmbeddingFunction[Documents]):
             self._client = openai.Embedding
         self._model_name = model_name
         self._deployment_id = deployment_id
+        self._dimensions = dimensions
 
     def __call__(self, input: Documents) -> Embeddings:
         # replace newlines, which can negatively affect performance.
@@ -186,7 +189,7 @@ class OpenAIEmbeddingFunction(EmbeddingFunction[Documents]):
         # Call the OpenAI Embedding API
         if self._v1:
             embeddings = self._client.create(
-                input=input, model=self._deployment_id or self._model_name
+                input=input, model=self._deployment_id or self._model_name, dimensions=self._dimensions
             ).data
 
             # Sort resulting embeddings by index
@@ -197,10 +200,10 @@ class OpenAIEmbeddingFunction(EmbeddingFunction[Documents]):
         else:
             if self._api_type == "azure":
                 embeddings = self._client.create(
-                    input=input, engine=self._deployment_id or self._model_name
+                    input=input, engine=self._deployment_id or self._model_name, dimensions=self._dimensions
                 )["data"]
             else:
-                embeddings = self._client.create(input=input, model=self._model_name)[
+                embeddings = self._client.create(input=input, model=self._model_name, dimensions=self._dimensions)[
                     "data"
                 ]
 
